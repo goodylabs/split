@@ -15,8 +15,11 @@ module Split
     helpers Split::DashboardHelpers
 
     get '/' do
+      if params[:client].blank?
+        redirect url('/select-client') and return
+      end
       # Display experiments without a winner at the top of the dashboard
-      @experiments = Split::ExperimentCatalog.all_active_first
+      @experiments = [Split::ExperimentCatalog.find("show_hide_widget_#{params[:client]}")].compact
 
       @metrics = Split::Metric.all
 
@@ -29,29 +32,33 @@ module Split
       erb :index
     end
 
+    get '/select-client' do
+      erb :select_client
+    end
+
     post '/:experiment' do
       @experiment = Split::ExperimentCatalog.find(params[:experiment])
       @alternative = Split::Alternative.new(params[:alternative], params[:experiment])
       @experiment.winner = @alternative.name
-      redirect url('/')
+      redirect url("/?client=#{params[:experiment].gsub("show_hide_widget_","")}")
     end
 
     post '/start/:experiment' do
       @experiment = Split::ExperimentCatalog.find(params[:experiment])
       @experiment.start
-      redirect url('/')
+      redirect url("/?client=#{params[:experiment].gsub("show_hide_widget_","")}")
     end
 
     post '/reset/:experiment' do
       @experiment = Split::ExperimentCatalog.find(params[:experiment])
       @experiment.reset
-      redirect url('/')
+      redirect url("/?client=#{params[:experiment].gsub("show_hide_widget_","")}")
     end
 
     post '/reopen/:experiment' do
       @experiment = Split::ExperimentCatalog.find(params[:experiment])
       @experiment.reset_winner
-      redirect url('/')
+      redirect url("/?client=#{params[:experiment].gsub("show_hide_widget_","")}")
     end
 
     delete '/:experiment' do
